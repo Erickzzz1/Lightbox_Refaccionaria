@@ -103,9 +103,44 @@
             <header class="h-16 border-b border-slate-800 bg-dark-900/50 backdrop-blur-sm flex items-center justify-between px-6 z-10">
                 <h2 class="text-lg font-semibold text-white" x-text="getCurrentTitle()"></h2>
                 <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <i class="ph ph-bell text-slate-400 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                        <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500"></span>
+                    <div class="relative" x-data="{ showNotifications: false }" @keydown.escape.window="showNotifications = false">
+                        <button @click="showNotifications = !showNotifications" class="relative text-slate-400 hover:text-white transition-colors p-1">
+                            <i class="ph ph-bell text-xl"></i>
+                            <span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 border border-dark-900" x-show="notifications.length > 0"></span>
+                        </button>
+
+                        <!-- Notification Popover -->
+                        <div x-show="showNotifications" 
+                             @click.outside="showNotifications = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-2"
+                             class="absolute right-0 top-full mt-3 w-80 bg-slate-900 rounded-xl border border-slate-800 shadow-2xl z-50 overflow-hidden"
+                             style="display: none;">
+                            <div class="p-3 border-b border-slate-800 bg-slate-800/50 flex justify-between items-center">
+                                <h3 class="text-sm font-semibold text-white">Notificaciones</h3>
+                                <button class="text-xs text-primary-400 hover:text-primary-300">Marcar leídas</button>
+                            </div>
+                            <div class="max-h-64 overflow-y-auto">
+                                <template x-for="notif in notifications" :key="notif.id">
+                                    <div class="p-3 border-b border-slate-800 hover:bg-slate-800/50 transition-colors flex gap-3 cursor-default">
+                                        <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0" :class="notif.color">
+                                            <i :class="notif.icon" class="text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-medium text-slate-200" x-text="notif.message"></p>
+                                            <p class="text-[10px] text-slate-500 mt-1" x-text="notif.time"></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="p-2 text-center border-t border-slate-800 bg-slate-800/30">
+                                <button class="text-xs text-slate-400 hover:text-white transition-colors">Ver todas</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="h-8 w-px bg-slate-700"></div>
                     <button class="text-sm text-slate-400 hover:text-white transition-colors">Ayuda</button>
@@ -129,7 +164,7 @@
                             <button class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-all text-sm font-medium">
                                 <i class="ph ph-faders"></i> Filtros
                             </button>
-                            <button class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-lg shadow-primary-500/20 transition-all text-sm font-medium">
+                            <button @click="openProductModal()" class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-lg shadow-primary-500/20 transition-all text-sm font-medium">
                                 <i class="ph ph-plus"></i> Nuevo Producto
                             </button>
                         </div>
@@ -175,9 +210,14 @@
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 text-center">
-                                                <button class="text-slate-500 hover:text-primary-400 transition-colors">
-                                                    <i class="ph ph-dots-three-vertical text-lg"></i>
-                                                </button>
+                                                <div class="flex items-center justify-center gap-2">
+                                                    <button @click="editProduct(product)" class="p-1.5 text-slate-400 hover:text-white hover:bg-primary-500 rounded-lg transition-all" title="Editar">
+                                                        <i class="ph ph-pencil-simple"></i>
+                                                    </button>
+                                                    <button @click="deleteProduct(product.sku)" class="p-1.5 text-slate-400 hover:text-white hover:bg-red-500 rounded-lg transition-all" title="Eliminar">
+                                                        <i class="ph ph-trash"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </template>
@@ -373,7 +413,7 @@
                                              <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs" x-text="client.status"></span>
                                          </td>
                                          <td class="px-6 py-4 text-right">
-                                             <button class="text-primary-400 hover:text-primary-300 text-xs font-medium">Ver Detalle</button>
+                                             <button @click="openCXCModal(client)" class="text-primary-400 hover:text-primary-300 text-xs font-medium">Ver Detalle</button>
                                          </td>
                                      </tr>
                                  </template>
@@ -392,7 +432,7 @@
                             </div>
                             <div class="overflow-y-auto flex-1 p-2 space-y-1">
                                 <template x-for="c in clients" :key="c.id">
-                                    <div class="p-3 rounded hover:bg-slate-800 cursor-pointer transition-colors" :class="c.id === 'C001' ? 'bg-slate-800' : ''">
+                                    <div @click="selectClient(c)" class="p-3 rounded hover:bg-slate-800 cursor-pointer transition-colors" :class="selectedClient && selectedClient.id === c.id ? 'bg-slate-800 border-l-2 border-primary-500' : 'border-l-2 border-transparent'">
                                         <p class="font-medium text-slate-200" x-text="c.name"></p>
                                         <p class="text-xs text-slate-500" x-text="c.type"></p>
                                     </div>
@@ -401,36 +441,36 @@
                         </div>
 
                         <!-- Client Detail -->
-                        <div class="lg:col-span-3 bg-slate-900 rounded-xl border border-slate-800 p-8">
+                        <div class="lg:col-span-3 bg-slate-900 rounded-xl border border-slate-800 p-8" x-show="selectedClient">
                              <div class="flex justify-between items-start mb-8">
                                  <div class="flex gap-4">
                                      <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-2xl text-slate-500 border border-slate-700">
                                          <i class="ph ph-user"></i>
                                      </div>
                                      <div>
-                                         <h2 class="text-2xl font-bold text-white">Taller Mecánico "El Tuercas"</h2>
-                                         <p class="text-slate-400">Cliente desde 2019 • Nivel Platino</p>
+                                         <h2 class="text-2xl font-bold text-white" x-text="selectedClient.name"></h2>
+                                         <p class="text-slate-400" x-text="'Cliente desde 2019 • ' + selectedClient.type"></p>
                                          <div class="flex gap-2 mt-2">
                                              <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">Crédito Aprobado</span>
-                                             <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700">Mayorista</span>
+                                             <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700" x-text="selectedClient.status"></span>
                                          </div>
                                      </div>
                                  </div>
-                                 <button class="px-4 py-2 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors text-sm">Editar Perfil</button>
+                                 <button @click="editClient(selectedClient)" class="px-4 py-2 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors text-sm">Editar Perfil</button>
                              </div>
 
                              <div class="grid grid-cols-3 gap-6 mb-8">
                                  <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
                                      <p class="text-xs text-slate-500 mb-1">Teléfono</p>
-                                     <p class="text-sm text-slate-200">55 1234 5678</p>
+                                     <p class="text-sm text-slate-200" x-text="selectedClient.phone || 'No registrado'"></p>
                                  </div>
                                  <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
                                      <p class="text-xs text-slate-500 mb-1">Email</p>
-                                     <p class="text-sm text-slate-200">contacto@eltuercas.mx</p>
+                                     <p class="text-sm text-slate-200" x-text="selectedClient.email || 'No registrado'"></p>
                                  </div>
                                  <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
                                      <p class="text-xs text-slate-500 mb-1">RFC</p>
-                                     <p class="text-sm text-slate-200">TME190101H45</p>
+                                     <p class="text-sm text-slate-200" x-text="selectedClient.rfc || 'XAXX010101000'"></p>
                                  </div>
                              </div>
 
@@ -442,18 +482,73 @@
                                      <span class="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
                                      <p class="text-sm font-semibold text-slate-200">Compra #F-9302</p>
                                      <p class="text-xs text-slate-500 mb-1">Hoy, 10:32 AM</p>
-                                     <p class="text-sm text-slate-400">Kit de Afinación Jetta A4, Aceite 5W30...</p>
+                                     <p class="text-sm text-slate-400">Kit de Afinación, Aceite 5W30, Filtros...</p>
                                  </div>
                                  <div class="relative">
                                      <span class="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-900"></span>
                                      <p class="text-sm font-semibold text-slate-200">Compra #F-9100</p>
                                      <p class="text-xs text-slate-500 mb-1">28 Ene 2026</p>
-                                     <p class="text-sm text-slate-400">Amortiguadores Traseros Nissan Versa</p>
+                                     <p class="text-sm text-slate-400" x-text="'Amortiguadores Traseros para ' + (selectedClient.type === 'Flotilla' ? 'Unidad 45' : 'Nissan Versa')"></p>
                                  </div>
                              </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- HELP & SUPPORT MODULE -->
+                <div x-show="currentTab === 'help'" x-cloak class="max-w-4xl mx-auto space-y-6">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-white mb-2">¿Cómo podemos ayudarte?</h2>
+                        <div class="relative max-w-lg mx-auto">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" placeholder="Buscar en la documentación..." 
+                                   class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg pl-10 py-3 focus:ring-primary-500 focus:border-primary-500 placeholder-slate-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-primary-500/50 transition-all cursor-pointer group">
+                            <div class="w-12 h-12 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                                <i class="ph ph-book-open"></i>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Manual de Usuario</h3>
+                            <p class="text-sm text-slate-400">Guías detalladas sobre cada módulo del sistema.</p>
+                        </div>
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-primary-500/50 transition-all cursor-pointer group">
+                            <div class="w-12 h-12 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                                <i class="ph ph-whatsapp-logo"></i>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Soporte por Chat</h3>
+                            <p class="text-sm text-slate-400">Habla con un agente en tiempo real.</p>
+                        </div>
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 hover:border-primary-500/50 transition-all cursor-pointer group">
+                            <div class="w-12 h-12 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                                <i class="ph ph-video"></i>
+                            </div>
+                            <h3 class="font-semibold text-white mb-2">Video Tutoriales</h3>
+                            <p class="text-sm text-slate-400">Aprende con videos cortos paso a paso.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                        <div class="p-6 border-b border-slate-800">
+                            <h3 class="text-lg font-semibold text-white">Preguntas Frecuentes</h3>
+                        </div>
+                        <div class="divide-y divide-slate-800" x-data="{ active: null }">
+                            <template x-for="(faq, index) in faqs" :key="index">
+                                <div class="bg-slate-900">
+                                    <button @click="active === index ? active = null : active = index" 
+                                            class="w-full flex justify-between items-center p-4 text-left hover:bg-slate-800/50 transition-colors group">
+                                        <span class="text-sm font-medium text-slate-200 group-hover:text-white" x-text="faq.q"></span>
+                                        <i class="ph ph-caret-down text-slate-500 transition-transform duration-300" :class="active === index ? 'rotate-180' : ''"></i>
+                                    </button>
+                                    <div x-show="active === index" class="p-4 pt-0 text-sm text-slate-400 bg-slate-900" x-collapse>
+                                        <p x-text="faq.a"></p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
 
             </div>
             
@@ -480,6 +575,144 @@
                 </div>
             </div>
 
+            <!-- Generic Modal -->
+            <div x-show="modal.isOpen" 
+                 class="fixed inset-0 z-50 flex items-center justify-center px-4"
+                 x-cloak>
+                
+                <!-- Backdrop -->
+                <div x-show="modal.isOpen" 
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-black/80 backdrop-blur-sm"
+                     @click="closeModal()"></div>
+
+                <!-- Modal Content -->
+                <div x-show="modal.isOpen"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                     class="relative bg-dark-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+                    
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+                        <h3 class="text-lg font-bold text-white" x-text="modal.title"></h3>
+                        <button @click="closeModal()" class="text-slate-400 hover:text-white transition-colors">
+                            <i class="ph ph-x text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="p-6 space-y-4">
+                        <!-- Product Form -->
+                        <template x-if="modal.type === 'product'">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">SKU</label>
+                                    <input type="text" x-model="modal.data.sku" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Descripción</label>
+                                    <input type="text" x-model="modal.data.description" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Marca</label>
+                                        <input type="text" x-model="modal.data.brand" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Existencia</label>
+                                        <input type="number" x-model="modal.data.stock" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Precio Público</label>
+                                    <input type="number" x-model="modal.data.price" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Client Form -->
+                        <template x-if="modal.type === 'client'">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Nombre Comercial</label>
+                                    <input type="text" x-model="modal.data.name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Tipo de Cliente</label>
+                                    <select x-model="modal.data.type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                        <option>Taller</option>
+                                        <option>Flotilla</option>
+                                        <option>Particular</option>
+                                        <option>Mayorista</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Límite de Crédito</label>
+                                    <input type="number" x-model="modal.data.creditLimit" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-primary-500">
+                                </div>
+                            </div>
+                        </template>
+                        <!-- CXC Invoice Details Modal -->
+                        <template x-if="modal.type === 'cxc'">
+                            <div class="space-y-4">
+                                <div class="bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+                                    <table class="w-full text-xs text-left text-slate-400">
+                                        <thead class="bg-slate-900 text-slate-500">
+                                            <tr>
+                                                <th class="px-3 py-2">Factura</th>
+                                                <th class="px-3 py-2">Fecha</th>
+                                                <th class="px-3 py-2 text-center">Días</th>
+                                                <th class="px-3 py-2 text-right">Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-800">
+                                            <template x-for="i in 3" :key="i">
+                                                <tr>
+                                                    <td class="px-3 py-2 text-slate-200" x-text="'F-202' + i"></td>
+                                                    <td class="px-3 py-2">15 Ene 2026</td>
+                                                    <td class="px-3 py-2 text-center text-orange-500" x-text="15 + i"></td>
+                                                    <td class="px-3 py-2 text-right font-mono text-white" x-text="formatCurrency((modal.data.balance / 3))"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                        <tfoot class="bg-slate-900 font-bold text-white border-t border-slate-800">
+                                            <tr>
+                                                <td colspan="3" class="px-3 py-2 text-right">Total Vencido:</td>
+                                                <td class="px-3 py-2 text-right text-red-400" x-text="formatCurrency(modal.data.balance)"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
+                                    <i class="ph-fill ph-info text-blue-400 text-lg"></i>
+                                    <div>
+                                        <p class="text-xs text-blue-200 font-semibold">Nota de Crédito Disponible</p>
+                                        <p class="text-[10px] text-blue-300">El cliente tiene $500.00 a favor por devolución de mercancía.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-6 py-4 border-t border-slate-800 bg-slate-800/30 flex justify-end gap-3">
+                        <button @click="closeModal()" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-medium transition-colors">Cerrar</button>
+                        <template x-if="modal.mode !== 'view'">
+                            <button @click="saveModalData()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-lg shadow-primary-500/20 text-sm font-medium transition-all transform active:scale-95">Guardar Cambios</button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -490,37 +723,177 @@
                 searchInventory: '',
                 searchPOS: '',
                 cart: [],
-                notification: {
-                    show: false,
-                    title: '',
-                    message: ''
-                },
+                notification: { show: false, title: '', message: '' },
                 
+                // Modal State
+                modal: { isOpen: false, type: '', title: '', mode: '', data: {} },
+
                 navItems: [
                     { id: 'inventory', label: 'Inventario', icon: 'ph-package' },
                     { id: 'pos', label: 'Ventas (POS)', icon: 'ph-shopping-cart' },
                     { id: 'cxc', label: 'Cuentas x Cobrar', icon: 'ph-currency-dollar' },
                     { id: 'crm', label: 'Directorio Clientes', icon: 'ph-users' },
+                    { id: 'help', label: 'Ayuda y Soporte', icon: 'ph-question' },
+                ],
+                
+                faqs: [
+                    { q: '¿Cómo puedo generar una factura global?', a: 'Para realizar una factura global del día, diríjase al módulo de Ventas y use la opción "Cierre de Caja" > "Facturar todo".' },
+                    { q: '¿Cómo agrego usuarios adicionales?', a: 'Contacte al administrador del sistema para solicitar nuevas credenciales de acceso.' },
+                    { q: '¿Los precios incluyen IVA?', a: 'Sí, todos los precios mostrados en el sistema ya incluyen el 16% de IVA.' },
                 ],
 
-                inventory: [
-                    { sku: 'BAL-001', description: 'Balatas Delanteras Cerámica Jetta A4', brand: 'Bosch', stock: 12, price: 650.00 },
-                    { sku: 'FIL-042', description: 'Filtro Aceite Sintético 5W30', brand: 'Gonher', stock: 3, price: 120.00 },
-                    { sku: 'AMO-993', description: 'Amortiguador Trasero Gas', brand: 'KYB', stock: 8, price: 890.00 },
-                    { sku: 'BJI-NGK', description: 'Bujía Iridium IX', brand: 'NGK', stock: 45, price: 145.00 },
-                    { sku: 'DIS-FRE', description: 'Disco de Freno Ventilado', brand: 'Brembo', stock: 2, price: 1200.00 },
-                    { sku: 'ACE-MOV', description: 'Aceite Motor 1L 20W50', brand: 'Mobil', stock: 24, price: 180.00 },
-                    { sku: 'BAT-LTH', description: 'Acumulador L-42-500', brand: 'LTH', stock: 4, price: 2100.00 },
+                notifications: [
+                    { id: 1, message: 'Stock bajo: Balatas Delanteras', time: 'Hace 10 min', icon: 'ph-warning', color: 'text-orange-500 bg-orange-500/10' },
+                    { id: 2, message: 'Pago recibido: $1,250.00', time: 'Hace 45 min', icon: 'ph-currency-dollar', color: 'text-emerald-500 bg-emerald-500/10' },
+                    { id: 3, message: 'Nuevo cliente registrado', time: 'Ayer, 4:20 PM', icon: 'ph-user-plus', color: 'text-blue-500 bg-blue-500/10' },
                 ],
 
-                clients: [
-                    { id: 'C001', name: 'Taller Mecánico "El Tuercas"', type: 'Taller', balance: 12500, creditLimit: 20000, status: 'Al Corriente' },
-                    { id: 'C002', name: 'Transportes Rápidos SA de CV', type: 'Flotilla', balance: 28000, creditLimit: 50000, status: 'Al Corriente' },
-                    { id: 'C003', name: 'Juan Pérez (Uber)', type: 'Particular', balance: 4500, creditLimit: 5000, status: 'Vencido' },
-                    { id: 'C004', name: 'Refaccionaria del Sur', type: 'Mayorista', balance: 200, creditLimit: 100000, status: 'Al Corriente' },
-                ],
+                inventory: [],
+                clients: [],
+                selectedClient: null,
 
-                // Computed getters simulated as methods for filtering
+                init() {
+                    // Changed key to v2 to ensure new fields (email, phone) are loaded for specific demo request
+                    const storedInventory = localStorage.getItem('erp_demo_v2_inventory');
+                    const storedClients = localStorage.getItem('erp_demo_v2_clients');
+
+                    if (storedInventory) {
+                        this.inventory = JSON.parse(storedInventory);
+                    } else {
+                        // Default Data
+                        this.inventory = [
+                            { sku: 'BAL-001', description: 'Balatas Delanteras Cerámica Jetta A4', brand: 'Bosch', stock: 12, price: 650.00 },
+                            { sku: 'FIL-042', description: 'Filtro Aceite Sintético 5W30', brand: 'Gonher', stock: 3, price: 120.00 },
+                            { sku: 'AMO-993', description: 'Amortiguador Trasero Gas', brand: 'KYB', stock: 8, price: 890.00 },
+                            { sku: 'BJI-NGK', description: 'Bujía Iridium IX', brand: 'NGK', stock: 45, price: 145.00 },
+                            { sku: 'DIS-FRE', description: 'Disco de Freno Ventilado', brand: 'Brembo', stock: 2, price: 1200.00 },
+                            { sku: 'ACE-MOV', description: 'Aceite Motor 1L 20W50', brand: 'Mobil', stock: 24, price: 180.00 },
+                            { sku: 'BAT-LTH', description: 'Acumulador L-42-500', brand: 'LTH', stock: 4, price: 2100.00 },
+                        ];
+                        this.persistData();
+                    }
+
+                    if (storedClients) {
+                        this.clients = JSON.parse(storedClients);
+                    } else {
+                        this.clients = [
+                            { id: 'C001', name: 'Taller Mecánico "El Tuercas"', type: 'Taller', balance: 12500, creditLimit: 20000, status: 'Al Corriente', email: 'contacto@eltuercas.mx', phone: '55 1234 5678', rfc: 'TME190101H45' },
+                            { id: 'C002', name: 'Transportes Rápidos SA de CV', type: 'Flotilla', balance: 28000, creditLimit: 50000, status: 'Al Corriente', email: 'admin@transportesrapidos.com', phone: '55 8765 4321', rfc: 'TRA101010KC2' },
+                            { id: 'C003', name: 'Juan Pérez (Uber)', type: 'Particular', balance: 4500, creditLimit: 5000, status: 'Vencido', email: 'juan.perez@gmail.com', phone: '55 5555 5555', rfc: 'PEJ808080H22' },
+                            { id: 'C004', name: 'Refaccionaria del Sur', type: 'Mayorista', balance: 200, creditLimit: 100000, status: 'Al Corriente', email: 'ventas@refdelsur.com', phone: '55 3333 1111', rfc: 'RDS909090L11' },
+                        ];
+                        this.persistData(); 
+                    }
+                    
+                    this.selectedClient = this.clients[0];
+                },
+
+                persistData() {
+                    localStorage.setItem('erp_demo_v2_inventory', JSON.stringify(this.inventory));
+                    localStorage.setItem('erp_demo_v2_clients', JSON.stringify(this.clients));
+                },
+
+                // --- Modal Logic ---
+
+                openProductModal(product = null) {
+                    this.modal.type = 'product';
+                    this.modal.isOpen = true;
+                    if (product) {
+                        this.modal.mode = 'edit';
+                        this.modal.title = 'Editar Producto';
+                        this.modal.data = { ...product }; // Clone
+                    } else {
+                        this.modal.mode = 'add';
+                        this.modal.title = 'Nuevo Producto';
+                        this.modal.data = { sku: '', description: '', brand: '', stock: 0, price: 0 };
+                    }
+                },
+
+                openClientModal(client) {
+                     this.modal.type = 'client';
+                     this.modal.isOpen = true;
+                     this.modal.mode = 'edit';
+                     this.modal.title = 'Editar Cliente';
+                     this.modal.data = { ...client };
+                },
+                
+                openCXCModal(client) {
+                    this.modal.type = 'cxc';
+                    this.modal.isOpen = true;
+                    this.modal.mode = 'view';
+                    this.modal.title = `Detalle de Adeudo - ${client.name}`;
+                    this.modal.data = { ...client };
+                },
+
+                closeModal() {
+                    this.modal.isOpen = false;
+                    setTimeout(() => { this.modal.data = {}; }, 300); // Clear after transition
+                },
+
+                saveModalData() {
+                    if (this.modal.type === 'product') {
+                        // Validate
+                        if(!this.modal.data.sku || !this.modal.data.description) {
+                            this.showNotification('Error', 'SKU y Descripción son obligatorios');
+                            return;
+                        }
+
+                        if (this.modal.mode === 'add') {
+                            this.inventory.push({ ...this.modal.data, stock: Number(this.modal.data.stock), price: Number(this.modal.data.price) });
+                            this.showNotification('Éxito', 'Producto agregado correctamente.');
+                        } else {
+                            // Update existing
+                            const index = this.inventory.findIndex(p => p.sku === this.modal.data.sku);
+                            if (index !== -1) {
+                                this.inventory[index] = { ...this.modal.data, stock: Number(this.modal.data.stock), price: Number(this.modal.data.price) };
+                                this.showNotification('Actualizado', 'Producto actualizado correctamente.');
+                            }
+                        }
+                    } else if (this.modal.type === 'client') {
+                        const index = this.clients.findIndex(c => c.id === this.modal.data.id);
+                        if (index !== -1) {
+                            // Persist email/phone updates
+                            this.clients[index] = { 
+                                ...this.clients[index], // keep existing
+                                ...this.modal.data, 
+                                creditLimit: Number(this.modal.data.creditLimit) 
+                            };
+                            // Update selected if needed
+                            if (this.selectedClient && this.selectedClient.id === this.modal.data.id) {
+                                this.selectedClient = this.clients[index];
+                            }
+                            this.showNotification('Actualizado', 'Datos del cliente actualizados.');
+                        }
+                    }
+
+                    this.persistData();
+                    this.closeModal();
+                },
+
+                // --- Actions ---
+
+                selectClient(client) {
+                    this.selectedClient = client;
+                },
+
+                editProduct(product) {
+                    this.openProductModal(product);
+                },
+
+                deleteProduct(sku) {
+                    if(confirm("¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.")) {
+                        this.inventory = this.inventory.filter(p => p.sku !== sku);
+                        this.persistData();
+                        this.showNotification('Eliminado', 'El producto ha sido eliminado del inventario.');
+                    }
+                },
+
+                editClient(client) {
+                    if(client) this.openClientModal(client);
+                },
+
+                // --- Getters & Helpers ---
+
                 get filteredInventory() {
                     const term = this.searchInventory.toLowerCase();
                     return this.inventory.filter(i => 
@@ -543,8 +916,7 @@
                 },
 
                 addToCart(product) {
-                    // Simple animation effect could go here
-                    this.cart.push({...product}); // Clone object
+                    this.cart.push({...product});
                     this.showNotification('Producto Agregado', `${product.description} se añadió al carrito.`);
                 },
 
@@ -557,13 +929,17 @@
                 },
 
                 checkout() {
-                    // Simulating processing
                     const total = this.formatCurrency(this.cartTotal);
                     const items = this.cart.length;
                     
-                    // The requested interaction
+                    // Deduct stock simulation
+                    this.cart.forEach(item => {
+                        const product = this.inventory.find(p => p.sku === item.sku);
+                        if(product && product.stock > 0) product.stock--;
+                    });
+                    this.persistData();
+
                     this.showNotification('¡Factura Generada Correctamente!', `Se procesó la venta de ${items} artículos por ${total}. Enviando XML al cliente...`);
-                    
                     this.cart = [];
                 },
 
