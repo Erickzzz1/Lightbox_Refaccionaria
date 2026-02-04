@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refaccionaria Pro - CRM & ERP Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        dark: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-200 font-sans antialiased h-screen overflow-hidden selection:bg-primary-500 selection:text-white" x-data="app()">
+
+    <div class="flex h-full">
+
+        <!-- Sidebar -->
+        <aside class="w-72 bg-dark-900 border-r border-slate-800 flex flex-col transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/30 shrink-0">
+                    <i class="ph ph-gear-six text-xl"></i>
+                </div>
+                <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Lightbox<span class="text-primary-500">Refaccionaria</span></h1>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <template x-for="item in navItems" :key="item.id">
+                    <a href="#" 
+                       @click.prevent="currentTab = item.id"
+                       :class="currentTab === item.id ? 'bg-primary-600/10 text-primary-400 border-r-2 border-primary-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'"
+                       class="flex items-center gap-3 px-3 py-3 rounded-l-lg transition-all group">
+                        <i :class="item.icon" class="text-xl group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium" x-text="item.label"></span>
+                    </a>
+                </template>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800">
+                <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=3b82f6&color=fff" class="w-8 h-8 rounded-full border border-slate-600">
+                    <div>
+                        <p class="text-sm font-medium text-white">Administrador</p>
+                        <p class="text-xs text-slate-500">Gerente General</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col bg-dark-950 relative overflow-hidden">
+            
+            <!-- Topbar (Optional utility bar) -->
+            <header class="h-16 border-b border-slate-800 bg-dark-900/50 backdrop-blur-sm flex items-center justify-between px-6 z-10">
+                <h2 class="text-lg font-semibold text-white" x-text="getCurrentTitle()"></h2>
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <i class="ph ph-bell text-slate-400 text-xl cursor-pointer hover:text-white transition-colors"></i>
+                        <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500"></span>
+                    </div>
+                    <div class="h-8 w-px bg-slate-700"></div>
+                    <button class="text-sm text-slate-400 hover:text-white transition-colors">Ayuda</button>
+                    <button class="text-sm text-slate-400 hover:text-white transition-colors">Salir</button>
+                </div>
+            </header>
+
+            <!-- Dynamic Views -->
+            <div class="flex-1 overflow-auto p-6 relative">
+                
+                <!-- INVENTORY MODULE -->
+                <div x-show="currentTab === 'inventory'" x-transition.opacity.duration.300ms class="space-y-6">
+                    <!-- Actions -->
+                    <div class="flex flex-col sm:flex-row justify-between gap-4">
+                        <div class="relative w-full sm:w-96">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" x-model="searchInventory" placeholder="Buscar por SKU, nombre, marca..." 
+                                   class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block pl-10 p-2.5 placeholder-slate-500 transition-all shadow-sm focus:shadow-primary-500/20">
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition-all text-sm font-medium">
+                                <i class="ph ph-faders"></i> Filtros
+                            </button>
+                            <button class="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-lg shadow-primary-500/20 transition-all text-sm font-medium">
+                                <i class="ph ph-plus"></i> Nuevo Producto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-xl shadow-black/20">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-slate-400">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-800/50 border-b border-slate-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-4 font-semibold">SKU / No. Parte</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold">Descripción</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold">Marca</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold text-right">Existencia</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold text-right">Precio Pub.</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold text-center">Estatus</th>
+                                        <th scope="col" class="px-6 py-4 font-semibold text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800">
+                                    <template x-for="product in filteredInventory" :key="product.sku">
+                                        <tr class="hover:bg-slate-800/30 transition-colors group">
+                                            <td class="px-6 py-4 font-medium text-white" x-text="product.sku"></td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-slate-600">
+                                                        <i class="ph ph-package"></i>
+                                                    </div>
+                                                    <span x-text="product.description"></span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span class="px-2 py-1 rounded-md bg-slate-800 text-slate-300 text-xs border border-slate-700" x-text="product.brand"></span>
+                                            </td>
+                                            <td class="px-6 py-4 text-right font-mono text-slate-200" x-text="product.stock"></td>
+                                            <td class="px-6 py-4 text-right font-mono text-primary-400" x-text="formatCurrency(product.price)"></td>
+                                            <td class="px-6 py-4 text-center">
+                                                <span :class="product.stock < 5 ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'"
+                                                      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border">
+                                                    <span class="w-1.5 h-1.5 rounded-full" :class="product.stock < 5 ? 'bg-red-500' : 'bg-emerald-500'"></span>
+                                                    <span x-text="product.stock < 5 ? 'Stock Bajo' : 'Disponible'"></span>
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 text-center">
+                                                <button class="text-slate-500 hover:text-primary-400 transition-colors">
+                                                    <i class="ph ph-dots-three-vertical text-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="px-6 py-4 border-t border-slate-700 bg-slate-800/30 text-xs text-slate-500 flex justify-between items-center">
+                            <span>Mostrando <span x-text="filteredInventory.length"></span> resultados</span>
+                            <div class="flex gap-2">
+                                <button class="px-2 py-1 hover:bg-slate-700 rounded disabled:opacity-50" disabled><i class="ph ph-caret-left"></i></button>
+                                <button class="px-2 py-1 hover:bg-slate-700 rounded"><i class="ph ph-caret-right"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POS / SALES MODULE -->
+                <div x-show="currentTab === 'pos'" x-cloak class="h-full flex flex-col md:flex-row gap-6">
+                    <!-- Product Grid -->
+                    <div class="flex-1 flex flex-col gap-4 min-h-0">
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" x-model="searchPOS" placeholder="Escanear o buscar producto..." 
+                                   class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block pl-10 p-3 shadow-sm">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 pb-20">
+                            <template x-for="product in filteredPOS" :key="product.sku">
+                                <div @click="addToCart(product)" 
+                                     class="group bg-slate-900 border border-slate-800 p-4 rounded-xl cursor-pointer hover:border-primary-500/50 hover:bg-slate-800/50 transition-all hover:shadow-lg hover:shadow-primary-500/10 flex flex-col gap-2 relative overflow-hidden">
+                                     
+                                    <div class="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs">
+                                            <i class="ph ph-plus"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-start">
+                                        <span class="text-xs font-mono text-slate-500" x-text="product.sku"></span>
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400" x-text="product.brand"></span>
+                                    </div>
+                                    <h3 class="text-sm font-medium text-slate-200 leading-tight group-hover:text-primary-400 transition-colors" x-text="product.description"></h3>
+                                    <div class="mt-auto flex justify-between items-end pt-2">
+                                        <span :class="product.stock < 5 ? 'text-red-400' : 'text-emerald-400'" class="text-xs flex items-center gap-1">
+                                            <i class="ph-fill ph-circle text-[8px]"></i>
+                                            <span x-text="product.stock + ' disp.'"></span>
+                                        </span>
+                                        <span class="font-bold text-lg text-white" x-text="formatCurrency(product.price)"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Cart Summary -->
+                    <div class="w-full md:w-96 bg-slate-900 rounded-xl border border-slate-800 flex flex-col h-full shadow-2xl">
+                        <div class="p-4 border-b border-slate-800 bg-slate-800/30 rounded-t-xl flex justify-between items-center">
+                            <h3 class="font-semibold text-white flex items-center gap-2">
+                                <i class="ph ph-shopping-cart-simple text-primary-400"></i> Orden Actual
+                            </h3>
+                            <button @click="clearCart()" class="text-xs text-red-400 hover:text-red-300 hover:underline" x-show="cart.length > 0">Limpiar</button>
+                        </div>
+
+                        <!-- Cart Items -->
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            <template x-if="cart.length === 0">
+                                <div class="h-full flex flex-col items-center justify-center text-slate-500 gap-2 opacity-50">
+                                    <i class="ph ph-basket text-4xl mb-2"></i>
+                                    <p class="text-sm">Carrito vacío</p>
+                                    <p class="text-xs">Agregue productos para comenzar</p>
+                                </div>
+                            </template>
+                            
+                            <template x-for="(item, index) in cart" :key="index">
+                                <div class="flex gap-3 bg-slate-800/40 p-3 rounded-lg border border-slate-700/50 group">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-200 truncate" x-text="item.description"></p>
+                                        <p class="text-xs text-slate-500" x-text="item.sku"></p>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-1">
+                                        <span class="font-mono text-sm text-white" x-text="formatCurrency(item.price)"></span>
+                                        <button @click="removeFromCart(index)" class="text-xs text-slate-600 hover:text-red-500 transition-colors p-1 -mr-1">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Totals & Actions -->
+                        <div class="p-4 border-t border-slate-800 bg-slate-900 rounded-b-xl space-y-4">
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between text-slate-400">
+                                    <span>Subtotal</span>
+                                    <span x-text="formatCurrency(cartTotal * 0.84)"></span>
+                                </div>
+                                <div class="flex justify-between text-slate-400">
+                                    <span>IVA (16%)</span>
+                                    <span x-text="formatCurrency(cartTotal * 0.16)"></span>
+                                </div>
+                                <div class="flex justify-between text-xl font-bold text-white pt-2 border-t border-slate-800">
+                                    <span>Total</span>
+                                    <span class="text-primary-400" x-text="formatCurrency(cartTotal)"></span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <button class="col-span-1 px-3 py-2 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-800 text-sm">Escoger Cliente</button>
+                                <select class="col-span-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-primary-500">
+                                    <option>Efectivo</option>
+                                    <option>Tarjeta</option>
+                                    <option>Transferencia</option>
+                                    <option>Crédito</option>
+                                </select>
+                            </div>
+
+                            <button @click="checkout()" 
+                                    :disabled="cart.length === 0"
+                                    class="w-full py-3 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg shadow-primary-900/50 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                <i class="ph ph-receipt"></i>
+                                <span>Generar Factura XML/PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACCOUNTS RECEIVABLE MODULE -->
+                <div x-show="currentTab === 'cxc'" x-cloak class="space-y-6">
+                   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- KPI Card 1 -->
+                        <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg">
+                            <div class="flex items-center gap-4">
+                                <div class="p-3 bg-orange-500/10 text-orange-500 rounded-lg">
+                                    <i class="ph ph-money text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Saldo Vencido</p>
+                                    <h3 class="text-2xl font-bold text-white">$45,200.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- KPI Card 2 -->
+                        <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-lg">
+                             <div class="flex items-center gap-4">
+                                <div class="p-3 bg-blue-500/10 text-blue-500 rounded-lg">
+                                    <i class="ph ph-chart-bar text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Crédito Otorgado</p>
+                                    <h3 class="text-2xl font-bold text-white">$150,000.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                   </div>
+
+                   <h3 class="text-lg font-medium text-white mb-4">Estado de Cuenta Clientes</h3>
+                   <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+                        <table class="w-full text-sm text-left text-slate-400">
+                             <thead class="text-xs text-slate-500 uppercase bg-slate-800/50">
+                                <tr>
+                                    <th class="px-6 py-4">Cliente</th>
+                                    <th class="px-6 py-4 text-center">Uso de Crédito</th>
+                                    <th class="px-6 py-4 text-right">Saldo Pendiente</th>
+                                    <th class="px-6 py-4 text-center">Estado</th>
+                                    <th class="px-6 py-4"></th>
+                                </tr>
+                             </thead>
+                             <tbody class="divide-y divide-slate-800">
+                                 <template x-for="client in clients" :key="client.id">
+                                     <tr class="hover:bg-slate-800/30 transition-colors">
+                                         <td class="px-6 py-4 font-medium text-white">
+                                             <div class="flex flex-col">
+                                                <span x-text="client.name"></span>
+                                                <span class="text-xs text-slate-500" x-text="'ID: ' + client.id"></span>
+                                             </div>
+                                         </td>
+                                         <td class="px-6 py-4 align-middle">
+                                             <div class="w-full max-w-xs mx-auto">
+                                                 <div class="flex justify-between text-xs mb-1">
+                                                     <span x-text="formatCurrency(client.balance)"></span>
+                                                     <span class="text-slate-500" x-text="'Límite: ' + formatCurrency(client.creditLimit)"></span>
+                                                 </div>
+                                                 <div class="w-full bg-slate-800 rounded-full h-2">
+                                                     <div class="h-2 rounded-full transition-all duration-1000"
+                                                          :style="'width: ' + ((client.balance / client.creditLimit) * 100) + '%'"
+                                                          :class="(client.balance / client.creditLimit) > 0.8 ? 'bg-red-500' : 'bg-primary-500'">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </td>
+                                         <td class="px-6 py-4 text-right font-mono text-slate-200" x-text="formatCurrency(client.balance)"></td>
+                                         <td class="px-6 py-4 text-center">
+                                             <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs" x-text="client.status"></span>
+                                         </td>
+                                         <td class="px-6 py-4 text-right">
+                                             <button class="text-primary-400 hover:text-primary-300 text-xs font-medium">Ver Detalle</button>
+                                         </td>
+                                     </tr>
+                                 </template>
+                             </tbody>
+                        </table>
+                   </div>
+                </div>
+
+                <!-- CRM MODULE -->
+                <div x-show="currentTab === 'crm'" x-cloak class="space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Client List Sidebar -->
+                        <div class="lg:col-span-1 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex flex-col h-[600px]">
+                            <div class="p-4 border-b border-slate-800">
+                                <input type="text" placeholder="Buscar cliente..." class="w-full bg-slate-800 border-none rounded text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary-500">
+                            </div>
+                            <div class="overflow-y-auto flex-1 p-2 space-y-1">
+                                <template x-for="c in clients" :key="c.id">
+                                    <div class="p-3 rounded hover:bg-slate-800 cursor-pointer transition-colors" :class="c.id === 'C001' ? 'bg-slate-800' : ''">
+                                        <p class="font-medium text-slate-200" x-text="c.name"></p>
+                                        <p class="text-xs text-slate-500" x-text="c.type"></p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Client Detail -->
+                        <div class="lg:col-span-3 bg-slate-900 rounded-xl border border-slate-800 p-8">
+                             <div class="flex justify-between items-start mb-8">
+                                 <div class="flex gap-4">
+                                     <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-2xl text-slate-500 border border-slate-700">
+                                         <i class="ph ph-user"></i>
+                                     </div>
+                                     <div>
+                                         <h2 class="text-2xl font-bold text-white">Taller Mecánico "El Tuercas"</h2>
+                                         <p class="text-slate-400">Cliente desde 2019 • Nivel Platino</p>
+                                         <div class="flex gap-2 mt-2">
+                                             <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">Crédito Aprobado</span>
+                                             <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-xs border border-slate-700">Mayorista</span>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <button class="px-4 py-2 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors text-sm">Editar Perfil</button>
+                             </div>
+
+                             <div class="grid grid-cols-3 gap-6 mb-8">
+                                 <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
+                                     <p class="text-xs text-slate-500 mb-1">Teléfono</p>
+                                     <p class="text-sm text-slate-200">55 1234 5678</p>
+                                 </div>
+                                 <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
+                                     <p class="text-xs text-slate-500 mb-1">Email</p>
+                                     <p class="text-sm text-slate-200">contacto@eltuercas.mx</p>
+                                 </div>
+                                 <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-800">
+                                     <p class="text-xs text-slate-500 mb-1">RFC</p>
+                                     <p class="text-sm text-slate-200">TME190101H45</p>
+                                 </div>
+                             </div>
+
+                             <h4 class="font-medium text-white mb-4 flex items-center gap-2">
+                                 <i class="ph ph-clock-counter-clockwise"></i> Historial Reciente
+                             </h4>
+                             <div class="relative pl-4 border-l border-slate-700 space-y-6">
+                                 <div class="relative">
+                                     <span class="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
+                                     <p class="text-sm font-semibold text-slate-200">Compra #F-9302</p>
+                                     <p class="text-xs text-slate-500 mb-1">Hoy, 10:32 AM</p>
+                                     <p class="text-sm text-slate-400">Kit de Afinación Jetta A4, Aceite 5W30...</p>
+                                 </div>
+                                 <div class="relative">
+                                     <span class="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-slate-600 border-2 border-slate-900"></span>
+                                     <p class="text-sm font-semibold text-slate-200">Compra #F-9100</p>
+                                     <p class="text-xs text-slate-500 mb-1">28 Ene 2026</p>
+                                     <p class="text-sm text-slate-400">Amortiguadores Traseros Nissan Versa</p>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Toast Notification -->
+            <div x-show="notification.show" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-y-8"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                 x-transition:leave-end="opacity-0 transform translate-y-8"
+                 class="fixed bottom-6 right-6 z-50">
+                <div class="bg-slate-900 border border-primary-500/50 shadow-2xl shadow-primary-500/20 rounded-lg p-4 flex items-center gap-4 min-w-[320px]">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                        <i class="ph-fill ph-check-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white text-sm" x-text="notification.title"></h4>
+                        <p class="text-xs text-slate-400" x-text="notification.message"></p>
+                    </div>
+                    <button @click="notification.show = false" class="ml-auto text-slate-500 hover:text-white">
+                        <i class="ph ph-x"></i>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function app() {
+            return {
+                currentTab: 'inventory',
+                searchInventory: '',
+                searchPOS: '',
+                cart: [],
+                notification: {
+                    show: false,
+                    title: '',
+                    message: ''
+                },
+                
+                navItems: [
+                    { id: 'inventory', label: 'Inventario', icon: 'ph-package' },
+                    { id: 'pos', label: 'Ventas (POS)', icon: 'ph-shopping-cart' },
+                    { id: 'cxc', label: 'Cuentas x Cobrar', icon: 'ph-currency-dollar' },
+                    { id: 'crm', label: 'Directorio Clientes', icon: 'ph-users' },
+                ],
+
+                inventory: [
+                    { sku: 'BAL-001', description: 'Balatas Delanteras Cerámica Jetta A4', brand: 'Bosch', stock: 12, price: 650.00 },
+                    { sku: 'FIL-042', description: 'Filtro Aceite Sintético 5W30', brand: 'Gonher', stock: 3, price: 120.00 },
+                    { sku: 'AMO-993', description: 'Amortiguador Trasero Gas', brand: 'KYB', stock: 8, price: 890.00 },
+                    { sku: 'BJI-NGK', description: 'Bujía Iridium IX', brand: 'NGK', stock: 45, price: 145.00 },
+                    { sku: 'DIS-FRE', description: 'Disco de Freno Ventilado', brand: 'Brembo', stock: 2, price: 1200.00 },
+                    { sku: 'ACE-MOV', description: 'Aceite Motor 1L 20W50', brand: 'Mobil', stock: 24, price: 180.00 },
+                    { sku: 'BAT-LTH', description: 'Acumulador L-42-500', brand: 'LTH', stock: 4, price: 2100.00 },
+                ],
+
+                clients: [
+                    { id: 'C001', name: 'Taller Mecánico "El Tuercas"', type: 'Taller', balance: 12500, creditLimit: 20000, status: 'Al Corriente' },
+                    { id: 'C002', name: 'Transportes Rápidos SA de CV', type: 'Flotilla', balance: 28000, creditLimit: 50000, status: 'Al Corriente' },
+                    { id: 'C003', name: 'Juan Pérez (Uber)', type: 'Particular', balance: 4500, creditLimit: 5000, status: 'Vencido' },
+                    { id: 'C004', name: 'Refaccionaria del Sur', type: 'Mayorista', balance: 200, creditLimit: 100000, status: 'Al Corriente' },
+                ],
+
+                // Computed getters simulated as methods for filtering
+                get filteredInventory() {
+                    const term = this.searchInventory.toLowerCase();
+                    return this.inventory.filter(i => 
+                        i.sku.toLowerCase().includes(term) || 
+                        i.description.toLowerCase().includes(term) ||
+                        i.brand.toLowerCase().includes(term)
+                    );
+                },
+
+                get filteredPOS() {
+                    const term = this.searchPOS.toLowerCase();
+                    return this.inventory.filter(i => 
+                        i.sku.toLowerCase().includes(term) || 
+                        i.description.toLowerCase().includes(term)
+                    );
+                },
+
+                get cartTotal() {
+                    return this.cart.reduce((sum, item) => sum + item.price, 0);
+                },
+
+                addToCart(product) {
+                    // Simple animation effect could go here
+                    this.cart.push({...product}); // Clone object
+                    this.showNotification('Producto Agregado', `${product.description} se añadió al carrito.`);
+                },
+
+                removeFromCart(index) {
+                    this.cart.splice(index, 1);
+                },
+
+                clearCart() {
+                    this.cart = [];
+                },
+
+                checkout() {
+                    // Simulating processing
+                    const total = this.formatCurrency(this.cartTotal);
+                    const items = this.cart.length;
+                    
+                    // The requested interaction
+                    this.showNotification('¡Factura Generada Correctamente!', `Se procesó la venta de ${items} artículos por ${total}. Enviando XML al cliente...`);
+                    
+                    this.cart = [];
+                },
+
+                showNotification(title, message) {
+                    this.notification.title = title;
+                    this.notification.message = message;
+                    this.notification.show = true;
+                    setTimeout(() => {
+                        this.notification.show = false;
+                    }, 4000);
+                },
+
+                getCurrentTitle() {
+                    const item = this.navItems.find(i => i.id === this.currentTab);
+                    return item ? item.label : 'Dashboard';
+                },
+
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
